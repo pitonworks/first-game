@@ -8,37 +8,61 @@ export class GameExperience {
         this.loadingScreen = document.getElementById('loading-screen');
         this.setupLoadingScreen();
         
-        // Initialize Three.js components
-        this.scene = new THREE.Scene();
-        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
-        
-        this.setupRenderer();
-        this.setupCamera();
-        this.setupLights();
-        
-        // Initialize game components
-        this.airplane = new Airplane(this.scene);
-        this.map = new Map(this.scene);
-        
-        // Initialize network (will handle missing credentials gracefully)
-        this.network = new Network();
-        
-        this.setupEventListeners();
-        
-        // Start the game loop
-        this.animate();
-        
-        // Hide loading screen after everything is initialized
-        this.hideLoadingScreen();
+        try {
+            // Initialize Three.js components
+            this.scene = new THREE.Scene();
+            this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            this.renderer = new THREE.WebGLRenderer({ antialias: true });
+            
+            this.setupRenderer();
+            this.setupCamera();
+            this.setupLights();
+            
+            // Initialize game components
+            this.airplane = new Airplane(this.scene);
+            this.map = new Map(this.scene);
+            
+            // Initialize network (will handle missing credentials gracefully)
+            this.network = new Network();
+            
+            this.setupEventListeners();
+            
+            // Start the game loop
+            this.animate();
+            
+            // Hide loading screen after everything is initialized
+            this.hideLoadingScreen();
+        } catch (error) {
+            console.error('Error initializing game:', error);
+            this.showError('Failed to initialize game. Please check your browser console for details.');
+        }
     }
 
     setupLoadingScreen() {
-        this.loadingScreen.innerHTML = '<h1>Loading Game...</h1>';
+        this.loadingScreen.innerHTML = `
+            <div class="loading-content">
+                <h1>Loading Game...</h1>
+                <div class="loading-progress"></div>
+            </div>
+        `;
+    }
+
+    showError(message) {
+        this.loadingScreen.innerHTML = `
+            <div class="error-content">
+                <h1>Error</h1>
+                <p>${message}</p>
+                <button onclick="window.location.reload()">Try Again</button>
+            </div>
+        `;
+        this.loadingScreen.style.display = 'flex';
     }
 
     hideLoadingScreen() {
-        this.loadingScreen.style.display = 'none';
+        // Add a small delay to ensure everything is properly initialized
+        setTimeout(() => {
+            this.loadingScreen.style.display = 'none';
+        }, 500);
     }
 
     setupRenderer() {
