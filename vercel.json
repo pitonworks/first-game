@@ -1,32 +1,10 @@
 {
-    "version": 2,
-    "builds": [
+    "rewrites": [
         {
-            "src": "package.json",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "dist"
-            }
+            "source": "/(.*)",
+            "destination": "/index.html"
         }
     ],
-    "routes": [
-        {
-            "handle": "filesystem"
-        },
-        {
-            "src": "/.*",
-            "dest": "/index.html"
-        }
-    ],
-    "headers": [
-        {
-            "source": "/(.*).js",
-            "headers": [
-                {
-                    "key": "Content-Type",
-                    "value": "application/javascript"
-                }
-            ]
-        }
-    ]
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist"
 } 
