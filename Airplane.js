@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Projectile } from './Projectile.js';
 
 export class Airplane {
     constructor(scene) {
@@ -14,6 +15,12 @@ export class Airplane {
         this.rotation = new THREE.Euler(0, 0, 0);
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.health = 100;
+        this.score = 0;
+        
+        // Projectile properties
+        this.projectiles = [];
+        this.lastShotTime = 0;
+        this.shootingCooldown = 250; // milliseconds between shots
         
         this.createModel();
         this.setupControls();
@@ -36,6 +43,12 @@ export class Airplane {
         const tailMaterial = new THREE.MeshPhongMaterial({ color: 0x2980b9 });
         this.tail = new THREE.Mesh(tailGeometry, tailMaterial);
         this.tail.position.set(0, 0, -1);
+
+        // Create gun positions
+        this.gunOffsets = [
+            new THREE.Vector3(-1, 0, 1), // Left wing
+            new THREE.Vector3(1, 0, 1)   // Right wing
+        ];
         
         // Group all parts
         this.mesh = new THREE.Group();
@@ -55,7 +68,8 @@ export class Airplane {
             q: false, // Roll left
             e: false, // Roll right
             shift: false, // Speed up
-            ctrl: false // Slow down
+            ctrl: false, // Slow down
+            space: false // Shoot
         };
 
         window.addEventListener('keydown', (e) => this.onKeyDown(e));
@@ -63,15 +77,44 @@ export class Airplane {
     }
 
     onKeyDown(event) {
-        if (this.keys.hasOwnProperty(event.key.toLowerCase())) {
-            this.keys[event.key.toLowerCase()] = true;
+        const key = event.key.toLowerCase();
+        if (key === ' ') {
+            this.keys.space = true;
+        } else if (this.keys.hasOwnProperty(key)) {
+            this.keys[key] = true;
         }
     }
 
     onKeyUp(event) {
-        if (this.keys.hasOwnProperty(event.key.toLowerCase())) {
-            this.keys[event.key.toLowerCase()] = false;
+        const key = event.key.toLowerCase();
+        if (key === ' ') {
+            this.keys.space = false;
+        } else if (this.keys.hasOwnProperty(key)) {
+            this.keys[key] = false;
         }
+    }
+
+    shoot() {
+        const currentTime = Date.now();
+        if (currentTime - this.lastShotTime < this.shootingCooldown) {
+            return;
+        }
+
+        // Get shooting direction based on airplane's rotation
+        const direction = new THREE.Vector3(0, 0, -1);
+        direction.applyEuler(this.rotation);
+
+        // Create projectiles from both wings
+        this.gunOffsets.forEach(offset => {
+            const gunPosition = this.position.clone();
+            const offsetRotated = offset.clone().applyEuler(this.rotation);
+            gunPosition.add(offsetRotated);
+            
+            const projectile = new Projectile(this.scene, gunPosition, direction);
+            this.projectiles.push(projectile);
+        });
+
+        this.lastShotTime = currentTime;
     }
 
     update() {
@@ -111,6 +154,21 @@ export class Airplane {
             this.rotation.z -= this.rotationSpeed;
         }
 
+        // Handle shooting
+        if (this.keys.space) {
+            this.shoot();
+        }
+
+        // Update projectiles
+        this.projectiles = this.projectiles.filter(projectile => {
+            projectile.update();
+            if (projectile.isExpired) {
+                projectile.remove();
+                return false;
+            }
+            return true;
+        });
+
         // Apply gravity and lift
         this.position.y -= 0.01; // Gravity
         if (this.currentSpeed > this.speed) {
@@ -130,5 +188,10 @@ export class Airplane {
     takeDamage(amount) {
         this.health = Math.max(0, this.health - amount);
         return this.health <= 0;
+    }
+
+    addScore(points) {
+        this.score += points;
+        document.getElementById('score').textContent = `Score: ${this.score}`;
     }
 } 
