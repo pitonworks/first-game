@@ -3,14 +3,12 @@ import { GameExperience } from './GameExperience.js';
 
 class Game {
     constructor() {
-        this.gameExperience = new GameExperience();
-        this.init();
-    }
-
-    init() {
-        // Hide loading screen when game is ready
+        // Show loading screen
         const loadingScreen = document.getElementById('loading-screen');
-        loadingScreen.style.display = 'none';
+        loadingScreen.style.display = 'flex';
+        
+        // Initialize game
+        this.gameExperience = new GameExperience();
     }
 }
 

@@ -2,16 +2,27 @@ import { createClient } from '@supabase/supabase-js';
 
 export class Network {
     constructor() {
-        // Initialize Supabase client with environment variables
-        this.supabase = createClient(
-            import.meta.env.VITE_SUPABASE_URL,
-            import.meta.env.VITE_SUPABASE_ANON_KEY
-        );
-        
-        this.setupRealtimeSubscriptions();
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseAnonKey) {
+            console.warn('Supabase credentials are missing. Multiplayer features will be disabled.');
+            this.supabase = null;
+            return;
+        }
+
+        try {
+            this.supabase = createClient(supabaseUrl, supabaseAnonKey);
+            this.setupRealtimeSubscriptions();
+        } catch (error) {
+            console.error('Failed to initialize Supabase client:', error);
+            this.supabase = null;
+        }
     }
 
     setupRealtimeSubscriptions() {
+        if (!this.supabase) return;
+
         // Subscribe to airplanes table changes
         this.supabase
             .from('airplanes')
@@ -32,6 +43,8 @@ export class Network {
     }
 
     updateAirplanePosition(position, rotation) {
+        if (!this.supabase) return;
+
         this.supabase
             .from('airplanes')
             .upsert({
@@ -50,6 +63,8 @@ export class Network {
     }
 
     fireProjectile(position, direction) {
+        if (!this.supabase) return;
+
         this.supabase
             .from('projectiles')
             .insert({

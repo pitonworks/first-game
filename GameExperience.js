@@ -5,19 +5,40 @@ import { Network } from './Network.js';
 
 export class GameExperience {
     constructor() {
+        this.loadingScreen = document.getElementById('loading-screen');
+        this.setupLoadingScreen();
+        
+        // Initialize Three.js components
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
-        this.airplane = new Airplane(this.scene);
-        this.map = new Map(this.scene);
-        this.network = new Network();
         
         this.setupRenderer();
         this.setupCamera();
         this.setupLights();
+        
+        // Initialize game components
+        this.airplane = new Airplane(this.scene);
+        this.map = new Map(this.scene);
+        
+        // Initialize network (will handle missing credentials gracefully)
+        this.network = new Network();
+        
         this.setupEventListeners();
         
+        // Start the game loop
         this.animate();
+        
+        // Hide loading screen after everything is initialized
+        this.hideLoadingScreen();
+    }
+
+    setupLoadingScreen() {
+        this.loadingScreen.innerHTML = '<h1>Loading Game...</h1>';
+    }
+
+    hideLoadingScreen() {
+        this.loadingScreen.style.display = 'none';
     }
 
     setupRenderer() {
