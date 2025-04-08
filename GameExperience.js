@@ -48,8 +48,10 @@ export class GameExperience {
     }
 
     setupCamera() {
-        this.camera.position.set(0, 5, 10);
-        this.camera.lookAt(0, 0, 0);
+        // Set initial camera position
+        this.cameraOffset = new THREE.Vector3(0, 5, 10);
+        this.camera.position.copy(this.airplane.position).add(this.cameraOffset);
+        this.camera.lookAt(this.airplane.position);
     }
 
     setupLights() {
@@ -69,9 +71,25 @@ export class GameExperience {
         });
     }
 
+    updateCamera() {
+        // Calculate camera position based on airplane's position and rotation
+        const cameraPosition = new THREE.Vector3();
+        cameraPosition.copy(this.airplane.position);
+        
+        // Add offset based on airplane's rotation
+        const offset = this.cameraOffset.clone();
+        offset.applyEuler(this.airplane.rotation);
+        cameraPosition.add(offset);
+        
+        // Smoothly move camera to new position
+        this.camera.position.lerp(cameraPosition, 0.1);
+        this.camera.lookAt(this.airplane.position);
+    }
+
     animate() {
         requestAnimationFrame(() => this.animate());
         this.airplane.update();
+        this.updateCamera();
         this.renderer.render(this.scene, this.camera);
     }
 } 
