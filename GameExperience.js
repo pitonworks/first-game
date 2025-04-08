@@ -15,12 +15,14 @@ export class GameExperience {
             this.renderer = new THREE.WebGLRenderer({ antialias: true });
             
             this.setupRenderer();
-            this.setupCamera();
             this.setupLights();
             
             // Initialize game components
             this.airplane = new Airplane(this.scene);
             this.map = new Map(this.scene);
+            
+            // Setup camera after airplane is initialized
+            this.setupCamera();
             
             // Initialize network (will handle missing credentials gracefully)
             this.network = new Network();
@@ -72,10 +74,18 @@ export class GameExperience {
     }
 
     setupCamera() {
-        // Set initial camera position
+        // Set initial camera position relative to airplane
         this.cameraOffset = new THREE.Vector3(0, 5, 10);
-        this.camera.position.copy(this.airplane.position).add(this.cameraOffset);
-        this.camera.lookAt(this.airplane.position);
+        
+        // Ensure airplane is initialized before accessing its position
+        if (this.airplane && this.airplane.position) {
+            this.camera.position.copy(this.airplane.position).add(this.cameraOffset);
+            this.camera.lookAt(this.airplane.position);
+        } else {
+            // Default camera position if airplane is not ready
+            this.camera.position.set(0, 5, 10);
+            this.camera.lookAt(0, 0, 0);
+        }
     }
 
     setupLights() {
@@ -96,6 +106,8 @@ export class GameExperience {
     }
 
     updateCamera() {
+        if (!this.airplane || !this.airplane.position) return;
+
         // Calculate camera position based on airplane's position and rotation
         const cameraPosition = new THREE.Vector3();
         cameraPosition.copy(this.airplane.position);
@@ -112,8 +124,12 @@ export class GameExperience {
 
     animate() {
         requestAnimationFrame(() => this.animate());
-        this.airplane.update();
-        this.updateCamera();
+        
+        if (this.airplane) {
+            this.airplane.update();
+            this.updateCamera();
+        }
+        
         this.renderer.render(this.scene, this.camera);
     }
 } 

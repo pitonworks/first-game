@@ -1,15 +1,17 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+    base: '/',
     server: {
-        headers: {
-            'Content-Type': 'application/javascript'
-        }
+        port: 5173,
+        host: true
     },
     build: {
+        outDir: 'dist',
+        assetsDir: 'assets',
         rollupOptions: {
-            output: {
-                format: 'es'
+            input: {
+                main: './index.html'
             }
         }
     }
