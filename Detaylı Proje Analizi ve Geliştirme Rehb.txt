@@ -1,0 +1,142 @@
+Detaylı Proje Analizi ve Geliştirme Rehberi
+Bu rapor, Three.js, Vercel ve Supabase kullanılarak bir uçak oyunu geliştirmek için detaylı bir proje şeması ve geliştirme rehberi sunar. Oyunun çok oyunculu yapısı, gerçek zamanlı senkronizasyon ve görsel efektler gibi karmaşık gereksinimleri ele almak için modüler bir yaklaşım benimsenmiştir. Aşağıda, projenin teknik gereksinimleri, entegrasyon detayları ve kaynaklar detaylı bir şekilde açıklanmıştır.
+
+Giriş ve Teknoloji Seçimi
+Kullanıcının belirttiği gibi, bir uçak oyunu geliştirmek için Three.js, Vercel ve Supabase kullanmayı planlıyoruz. Three.js, web tabanlı 3D grafik oluşturma için güçlü bir kütüphane olup, uçak hareketleri, harita ve efektler için ideal bir seçimdir. Vercel, frontend hosting için kolaylık sağlar ve sürekli entegrasyon özellikleriyle geliştirme sürecini hızlandırır. Supabase ise, çok oyunculu senkronizasyon için gerçek zamanlı veritabanı ve kimlik doğrulama özellikleri sunar, özellikle WebSocket üzerinden veri akışı ile multiplayer oyunlar için uygundur.
+
+Araştırmalar, Three.js'in Vercel ile entegrasyonunun basit olduğunu gösteriyor; örneğin, Three.js Journey gibi kaynaklar, build script'leri ile dağıtım sürecini detaylı açıklıyor. Benzer şekilde, Supabase'in gerçek zamanlı özellikleri, multiplayer oyunlar için etkili bir çözüm sunuyor; Supabase Realtime Documentation bu konuda rehberlik ediyor.
+
+Proje Şeması ve Dosya Yapısı
+Proje, modüler bir yapı ile geliştirilmelidir. Aşağıdaki dosya yapısı, cursor tabanlı geliştirme için uygun bir şekilde tasarlanmıştır:
+
+text
+
+Collapse
+
+Wrap
+
+Copy
+Game Project
+├── Frontend (Vercel)
+│   ├── index.html
+│   ├── main.js
+│   ├── GameExperience.js
+│   ├── Airplane.js
+│   ├── Map.js
+│   ├── Projectile.js
+│   ├── Effects.js
+│   ├── Network.js
+│   ├── styles.css
+│   └── assets/
+│       ├── airplane.gltf
+│       ├── explosion.png
+│       └── map_texture.jpg
+├── Backend (Supabase)
+│   ├── Database
+│   │   ├── Tables
+│   │   │   ├── players
+│   │   │   │   ├── id (birincil anahtar)
+│   │   │   │   ├── name
+│   │   │   │   └── other player data
+│   │   │   ├── airplanes
+│   │   │   │   ├── id (birincil anahtar)
+│   │   │   │   ├── player_id (yabancı anahtar)
+│   │   │   │   ├── position_x
+│   │   │   │   ├── position_y
+│   │   │   │   ├── position_z
+│   │   │   │   ├── rotation
+│   │   │   │   ├── health
+│   │   │   │   └── other state data
+│   │   │   └── projectiles
+│   │   │       ├── id (birincil anahtar)
+│   │   │       ├── owner_id (yabancı anahtar)
+│   │   │       ├── position_x
+│   │   │       ├── position_y
+│   │   │       ├── position_z
+│   │   │       ├── direction_x
+│   │   │       ├── direction_y
+│   │   │       ├── direction_z
+│   │   │       └── timestamp
+│   └── Real-time Subscriptions
+│       ├── Listen to airplanes table changes
+│       ├── Listen to projectiles table changes
+└── Deployment
+    ├── Vercel for frontend
+    └── Supabase for backend
+Bu yapı, her bileşenin sorumluluğunu net bir şekilde ayırır ve geliştirme sürecini kolaylaştırır.
+
+Teknik Detaylar ve Entegrasyon
+Three.js ile 3D Grafikler
+Three.js, sahne, kamera ve render yönetimi için kullanılır. Uçak modeli, Clara.io veya Sketchfab gibi platformlardan ücretsiz olarak indirilebilir, GLTF veya OBJ formatında olmalıdır. Harita, basit bir düzlem geometrisi ile oluşturulabilir, doku eklenerek görsellik artırılabilir. Kontroller için WASD tuşları ve space tuşu önerilir; örneğin, Codrops The Aviator bu konuda rehberlik edebilir.
+
+Efektler için, patlama ve düşme animasyonları Three.js'in parçacık sistemleri ile oluşturulabilir; Three.js Particle System dokümantasyonu faydalı olacaktır.
+
+Araştırma, daha büyük projeler için kodun modüler hale getirilmesinin önemini vurgulamaktadır. Three.js Journey dersinde, sınıflar ve modüller kullanılarak kodun sürdürülebilirliğinin artırılması öneriliyor. Bu nedenle, GameExperience gibi bir ana sınıf oluşturarak bileşenleri (örneğin Airplane, Map) ayrı dosyalarda tanımlayacağız.
+
+Supabase ile Gerçek Zamanlı Çok Oyunculu
+Supabase'in @supabase/realtime-js paketi ile frontend'den gerçek zamanlı bağlantı kurulur. Örneğin, airplanes tablosundaki değişiklikler dinlenerek diğer oyuncuların uçakları güncellenir. Aşağıdaki kod örneği, temel bir bağlantıyı gösterir:
+
+javascript
+
+Collapse
+
+Wrap
+
+Copy
+import { createClient } from '@supabase/supabase-js';
+
+class Network {
+  constructor() {
+    this.supabase = createClient('your-supabase-url', 'your-anon-key');
+    this.listenToAirplanes();
+    this.listenToProjectiles();
+  }
+
+  listenToAirplanes() {
+    const subscription = this.supabase
+      .from('airplanes')
+      .on('INSERT', (payload) => {
+        // Diğer oyuncuların uçaklarını güncelle
+      })
+      .on('UPDATE', (payload) => {
+        // Uçak pozisyonunu güncelle
+      })
+      .subscribe();
+  }
+
+  listenToProjectiles() {
+    const subscription = this.supabase
+      .from('projectiles')
+      .on('INSERT', (payload) => {
+        // Yeni mermi eklendiğinde işlem yap
+      })
+      .subscribe();
+  }
+}
+Bu yapı, oyuncuların pozisyonlarını ve mermilerini gerçek zamanlı olarak senkronize eder. Çarpışma algılaması, istemci tarafında yapılabilir, ancak sunucu tarafında doğrulanması önerilir (örneğin, hile önleme için). Supabase Exploring Realtime by Building a Game makalesi, çok oyunculu oyunlar için Supabase'in nasıl kullanılabileceğini detaylı bir şekilde açıklar.
+
+Vercel ile Dağıtım
+Vercel, frontend'in kolayca dağıtımı için uygundur. Proje, bir build script'i ile hazırlanmalı (örneğin npm run build), ve /dist klasörüne yerleştirilmelidir. Three.js Journey bu süreci detaylı açıklar.
+
+Oyun Mekaniği ve Performans
+Hareket ve Kontroller: Uçak, WASD ile yönlendirilir, space ile ateş edilir. Yere çarpma durumunda patlama efekti tetiklenir.
+Çok Oyunculu Senkronizasyon: Her oyuncunun uçağı airplanes tablosunda saklanır, mermiler projectiles tablosunda takip edilir. Gerçek zamanlı aboneliklerle senkronizasyon sağlanır.
+Efektler: Patlama için parçacık sistemleri, düşme animasyonları için Three.js animasyonları kullanılabilir.
+Performans: Gerçek zamanlı senkronizasyon, istemci tarafı çarpışma algılaması ile başlayabilir, ancak sunucu tarafı doğrulama ile ölçeklenebilirlik artırılabilir.
+Kaynaklar ve Örnekler
+Three.js Journey: Code Structuring for Bigger Projects - Üçgen yapılandırma için en iyi uygulamalar.
+Supabase Realtime Documentation - Gerçek zamanlı özellikler için rehber.
+Clara.io Free Aircraft 3D Models - Ücretsiz 3D uçak modelleri.
+Sketchfab Three.js Tagged Models - Three.js ile uyumlu modeller.
+Codrops The Aviator Three.js Tutorial - Three.js ile uçak animasyonu.
+Supabase Exploring Realtime by Building a Game - Çok oyunculu oyun için Supabase kullanımı.
+Bu detaylı yapı ve kaynaklarla, oyunun geliştirilmesi için sağlam bir temel oluşturulabilir. Performans ve ölçeklenebilirlik açısından dikkatli planlama yapılmalı, özellikle çok oyunculu senkronizasyon ve çarpışma algılaması için.
+
+Key Citations:
+
+Three.js Journey Code Structuring for Bigger Projects
+Supabase Realtime Documentation Guide
+Clara.io Free Aircraft 3D Models
+Sketchfab Three.js Tagged Models
+Codrops The Aviator Three.js Tutorial
+Supabase Exploring Realtime by Building a Game
